@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dot Game</title>
+    <title>Cube Links Game</title>
     <style>
         body {
             display: flex;
@@ -12,78 +12,81 @@
             height: 100vh;
             margin: 0;
             background-color: #f0f0f0;
+            font-family: Arial, sans-serif;
         }
-        #gameCanvas {
+        #gameContainer {
+            position: relative;
+            width: 800px;
+            height: 600px;
             border: 2px solid #000;
             background-color: #fff;
+        }
+        .cube {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            background-color: #007bff;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .cube:hover {
+            background-color: #0056b3;
         }
     </style>
 </head>
 <body>
-    <canvas id="gameCanvas" width="800" height="600"></canvas>
+    <div id="gameContainer"></div>
+    <div id="scoreBoard" style="text-align: center; margin-top: 20px;">
+        <h2>Score: <span id="score">0</span></h2>
+    </div>
     <script>
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-
+        const container = document.getElementById('gameContainer');
+        const scoreDisplay = document.getElementById('score');
         let score = 0;
-        const dots = [];
-        const numDots = 10;
-        const dotRadius = 15;
+        const cubes = [];
+        const numCubes = 10;
+        const cubeSize = 50;
+        const linkThreshold = 70; // Distance threshold for linking
 
-        function createDot() {
-            return {
-                x: Math.random() * (canvas.width - dotRadius * 2) + dotRadius,
-                y: Math.random() * (canvas.height - dotRadius * 2) + dotRadius,
-                radius: dotRadius,
-                color: '#' + Math.floor(Math.random()*16777215).toString(16)  // Random color
-            };
-        }
-
-        function drawDot(dot) {
-            ctx.beginPath();
-            ctx.arc(dot.x, dot.y, dot.radius, 0, Math.PI * 2);
-            ctx.fillStyle = dot.color;
-            ctx.fill();
-            ctx.closePath();
-        }
-
-        function drawDots() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            dots.forEach(dot => drawDot(dot));
+        function createCube() {
+            const cube = document.createElement('div');
+            cube.className = 'cube';
+            cube.style.top = `${Math.random() * (container.clientHeight - cubeSize)}px`;
+            cube.style.left = `${Math.random() * (container.clientWidth - cubeSize)}px`;
+            cube.dataset.id = cubes.length;
+            cube.addEventListener('click', handleClick);
+            container.appendChild(cube);
+            return cube;
         }
 
         function handleClick(event) {
-            const rect = canvas.getBoundingClientRect();
-            const x = event.clientX - rect.left;
-            const y = event.clientY - rect.top;
-
-            dots.forEach((dot, index) => {
-                const dist = Math.sqrt((x - dot.x) ** 2 + (y - dot.y) ** 2);
-                if (dist < dot.radius) {
-                    score++;
-                    dots.splice(index, 1);
-                    addDot();
-                }
-            });
-
-            drawDots();
-            document.title = `Score: ${score}`;
+            const clickedCube = event.target;
+            const id = clickedCube.dataset.id;
+            const linkedCubes = cubes.filter(cube => cube !== clickedCube && isLinked(clickedCube, cube));
+            
+            if (linkedCubes.length > 0) {
+                score++;
+                scoreDisplay.textContent = score;
+                clickedCube.style.backgroundColor = '#28a745'; // Change color when linked
+                linkedCubes.forEach(cube => cube.style.backgroundColor = '#28a745');
+            }
         }
 
-        function addDot() {
-            if (dots.length < numDots) {
-                dots.push(createDot());
-            }
+        function isLinked(cube1, cube2) {
+            const rect1 = cube1.getBoundingClientRect();
+            const rect2 = cube2.getBoundingClientRect();
+            const distance = Math.sqrt(
+                Math.pow(rect1.left - rect2.left, 2) +
+                Math.pow(rect1.top - rect2.top, 2)
+            );
+            return distance <= linkThreshold;
         }
 
         function init() {
-            for (let i = 0; i < numDots; i++) {
-                addDot();
+            for (let i = 0; i < numCubes; i++) {
+                cubes.push(createCube());
             }
-            drawDots();
         }
-
-        canvas.addEventListener('click', handleClick);
 
         init();
     </script>
